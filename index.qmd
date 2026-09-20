@@ -1,0 +1,32 @@
+---
+title: "Exploring Census PUMS Data"
+author: "Lasya Harini Banka"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-tools: true
+    theme: cosmo
+execute:
+  warning: false
+  message: false
+---
+
+## Introduction
+
+## Setup
+
+```{r}
+#| label: setup
+#| include: false
+
+library(tidyverse)
+library(httr)
+library(jsonlite)
+library(lubridate)
+```
+
+```{r}
+
+```
