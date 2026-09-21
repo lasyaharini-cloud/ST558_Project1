@@ -2,14 +2,14 @@ project:
   type: website
   output-dir: docs
   render:
-    - index.qmd
+    - Project_1.qmd
 
 website:
   title: "ST 558 Project 1"
   navbar:
     left:
-      - href: index.qmd
-        text: Project
+      - href: Project_1.qmd
+        text: Project 1
 
 format:
   html:

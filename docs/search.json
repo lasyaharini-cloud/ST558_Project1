@@ -1,7 +1,28 @@
 [
   {
-    "objectID": "index.html#setup",
-    "href": "index.html#setup",
+    "objectID": "Project_1.html",
+    "href": "Project_1.html",
+    "title": "Exploring Census PUMS Data",
+    "section": "",
+    "text": "This website contains my ST 558 Project 1.\n[View the complete Project 1 analysis](Project_1.html)"
+  },
+  {
+    "objectID": "Project_1.html#census-pums-data-analysis",
+    "href": "Project_1.html#census-pums-data-analysis",
+    "title": "Exploring Census PUMS Data",
+    "section": "",
+    "text": "This website contains my ST 558 Project 1.\n[View the complete Project 1 analysis](Project_1.html)"
+  },
+  {
+    "objectID": "Project_1.html#introduction",
+    "href": "Project_1.html#introduction",
+    "title": "Exploring Census PUMS Data",
+    "section": "Introduction",
+    "text": "Introduction"
+  },
+  {
+    "objectID": "Project_1.html#setup",
+    "href": "Project_1.html#setup",
     "title": "Exploring Census PUMS Data",
     "section": "Setup",
     "text": "Setup"

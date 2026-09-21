@@ -13,6 +13,12 @@ execute:
   message: false
 ---
 
+## Census PUMS Data Analysis
+
+This website contains my ST 558 Project 1.
+
+\[View the complete Project 1 analysis\](Project_1.html)
+
 ## Introduction
 
 ## Setup
