@@ -26,11 +26,10 @@ library(hms)
 census_key <- Sys.getenv("CENSUS_KEY")
 
 if (census_key == "") {
-  stop("Census API key was not found.")
-}
+  stop("Census API key was not found.")}
 ```
 
-## Part 1: Data Processing
+## Data Processing
 
 ### Parsing Variable Values
 
@@ -39,34 +38,28 @@ The Census API uses codes for many variables. I first created a function that do
 ```{r}
 pums_variables <- c(
   "AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP",
-  "PWGTP", "FER", "HHL", "SCH", "SCHL", "SEX"
-)
+  "PWGTP", "FER", "HHL", "SCH", "SCHL", "SEX")
 
 get_variable_metadata <- function(year) {
   valid_years <- 2021:2024
-
   if (length(year) != 1 || !year %in% valid_years) {
-    stop("Year must be 2021, 2022, 2023, or 2024.")
-  }
+    stop("Year must be 2021, 2022, 2023, or 2024.")}
 
   if (year %in% c(2021, 2022)) {
     state_variable <- "ST"
   } else {
-    state_variable <- "STATE"
-  }
+    state_variable <- "STATE"}
 
   variables_to_keep <- c(
     pums_variables,
     state_variable,
     "REGION",
-    "DIVISION"
-  )
+    "DIVISION")
 
   url <- paste0(
     "https://api.census.gov/data/",
     year,
-    "/acs/acs1/pums/variables.json"
-  )
+    "/acs/acs1/pums/variables.json")
 
   response <- GET(url)
   stop_for_status(response)
@@ -74,13 +67,11 @@ get_variable_metadata <- function(year) {
   response_text <- content(
     response,
     as = "text",
-    encoding = "UTF-8"
-  )
+    encoding = "UTF-8")
 
   response_list <- fromJSON(
     response_text,
-    simplifyVector = FALSE
-  )
+    simplifyVector = FALSE)
 
   all_variables <- response_list$variables
   missing_variables <- setdiff(variables_to_keep, names(all_variables))
@@ -88,12 +79,9 @@ get_variable_metadata <- function(year) {
   if (length(missing_variables) > 0) {
     stop(
       "Some required variables were not found: ",
-      paste(missing_variables, collapse = ", ")
-    )
-  }
+      paste(missing_variables, collapse = ", "))}
 
-  all_variables[variables_to_keep]
-}
+  all_variables[variables_to_keep]}
 ```
 
 The information is downloaded for all four years and saved in an RDS file.
@@ -113,15 +101,12 @@ if (!file.exists("data/census_variable_values.rds")) {
 
   saveRDS(
     census_variable_values,
-    "data/census_variable_values.rds"
-  )
-}
+    "data/census_variable_values.rds")}
 ```
 
 ```{r}
 census_variable_values <- readRDS(
-  "data/census_variable_values.rds"
-)
+  "data/census_variable_values.rds")
 
 names(census_variable_values)
 ```
@@ -136,21 +121,16 @@ get_value_labels <- function(year, variable) {
   variable_information <- year_information[[variable]]
 
   if (is.null(variable_information)) {
-    stop("Variable information was not found.")
-  }
-
+    stop("Variable information was not found.")}
   values <- variable_information$values
 
   if (is.null(values)) {
-    return(NULL)
-  }
+    return(NULL)}
 
   if (!is.null(values$item)) {
-    values <- values$item
-  }
+    values <- values$item}
 
-  unlist(values, use.names = TRUE)
-}
+  unlist(values, use.names = TRUE)}
 ```
 
 Check using the SEX variable.
@@ -170,8 +150,7 @@ response_to_tibble <- function(response) {
   response_text <- content(
     response,
     as = "text",
-    encoding = "UTF-8"
-  )
+    encoding = "UTF-8")
 
   api_data <- fromJSON(response_text)
   column_names <- as.character(api_data[1, ])
@@ -180,8 +159,7 @@ response_to_tibble <- function(response) {
   output <- as_tibble(data_rows)
   names(output) <- column_names
 
-  output
-}
+  output}
 ```
 
 This request is used to check the helper.
@@ -190,13 +168,11 @@ This request is used to check the helper.
 test_url <- paste0(
   "https://api.census.gov/data/2024/acs/acs1/pums",
   "?get=AGEP,PWGTP,SEX",
-  "&for=state:37"
-)
+  "&for=state:37")
 
 test_response <- GET(
   test_url,
-  query = list(key = census_key)
-)
+  query = list(key = census_key))
 test_data <- response_to_tibble(test_response)
 
 head(test_data)
@@ -209,40 +185,33 @@ JWAP and JWDP are stored as coded time ranges. This helper finds the midpoint of
 ```{r}
 time_midpoint <- function(time_label) {
   if (is.na(time_label) || grepl("N/A", time_label, ignore.case = TRUE)) {
-    return(NA_real_)
-  }
+    return(NA_real_)}
 
   clean_label <- gsub("\\.", "", time_label)
   time_parts <- strsplit(clean_label, " to ", fixed = TRUE)[[1]]
 
   if (length(time_parts) != 2) {
-    return(NA_real_)
-  }
+    return(NA_real_)}
 
   start_time <- parse_date_time(
     trimws(time_parts[1]),
-    orders = c("I:M p", "I p")
-  )
+    orders = c("I:M p", "I p"))
 
   end_time <- parse_date_time(
     trimws(time_parts[2]),
-    orders = c("I:M p", "I p")
-  )
+    orders = c("I:M p", "I p"))
 
   if (is.na(start_time) || is.na(end_time)) {
-    return(NA_real_)
-  }
+    return(NA_real_)}
 
   start_seconds <- hour(start_time) * 3600 + minute(start_time) * 60
   end_seconds <- hour(end_time) * 3600 + minute(end_time) * 60
 
   if (end_seconds < start_seconds) {
-    end_seconds <- end_seconds + 86400
-  }
+    end_seconds <- end_seconds + 86400}
 
   midpoint <- (start_seconds + end_seconds) / 2
-  midpoint %% 86400
-}
+  midpoint %% 86400}
 ```
 
 This function applies the midpoint calculation to a full column.
@@ -255,11 +224,9 @@ convert_time_variable <- function(values, year, variable) {
   midpoint_seconds <- vapply(
     time_labels,
     time_midpoint,
-    numeric(1)
-  )
+    numeric(1))
 
-  as_hms(midpoint_seconds)
-}
+  as_hms(midpoint_seconds)}
 ```
 
 ### Converting Categorical Variables
@@ -273,9 +240,7 @@ convert_to_factor <- function(values, year, variable) {
   factor(
     values,
     levels = names(labels),
-    labels = unname(labels)
-  )
-}
+    labels = unname(labels))}
 ```
 
 ### Checking Geographic Values
@@ -285,8 +250,7 @@ The user can enter a geographic code, label or the word all.
 ```{r}
 find_geography_code <- function(year, geography, geography_value) {
   if (tolower(geography_value) == "all") {
-    return("*")
-  }
+    return("*")}
 
   if (geography == "State") {
     if (year %in% c(2021, 2022)) {
@@ -295,25 +259,20 @@ find_geography_code <- function(year, geography, geography_value) {
       geography_variable <- "STATE"
     }
   } else {
-    geography_variable <- toupper(geography)
-  }
+    geography_variable <- toupper(geography)}
 
   labels <- get_value_labels(year, geography_variable)
 
   if (geography_value %in% names(labels)) {
-    return(geography_value)
-  }
+    return(geography_value)}
 
   label_match <- which(
-    tolower(unname(labels)) == tolower(geography_value)
-  )
+    tolower(unname(labels)) == tolower(geography_value))
 
   if (length(label_match) == 1) {
-    return(names(labels)[label_match])
-  }
+    return(names(labels)[label_match])}
 
-  stop("The selected geographic value is not valid for ", geography, ".")
-}
+  stop("The selected geographic value is not valid for ", geography, ".")}
 ```
 
 ### Requesting One Year of Data
@@ -329,72 +288,59 @@ get_census_data <- function(
     geography_value = NULL
 ) {
   if (length(year) != 1 || !year %in% 2021:2024) {
-    stop("Year must be one value: 2021, 2022, 2023, or 2024.")
-  }
+    stop("Year must be one value: 2021, 2022, 2023, or 2024.")}
 
   allowed_numeric <- c(
-    "AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP"
-  )
+    "AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP")
 
   if (length(numeric_vars) == 0 ||
       !all(numeric_vars %in% allowed_numeric)) {
-    stop("At least one valid numeric variable is required.")
-  }
+    stop("At least one valid numeric variable is required.")}
 
   if (!"PWGTP" %in% numeric_vars) {
-    numeric_vars <- c(numeric_vars, "PWGTP")
-  }
+    numeric_vars <- c(numeric_vars, "PWGTP")}
 
   if (length(setdiff(numeric_vars, "PWGTP")) < 1) {
-    stop("Select at least one numeric variable besides PWGTP.")
-  }
+    stop("Select at least one numeric variable besides PWGTP.")}
 
   allowed_categorical <- c("FER", "HHL", "SCH", "SCHL", "SEX")
 
   if (length(categorical_vars) < 1 ||
       !all(categorical_vars %in% allowed_categorical)) {
-    stop("Select at least one valid categorical variable.")
-  }
+    stop("Select at least one valid categorical variable.")}
 
   allowed_geographies <- c("State", "Division", "Region")
 
   if (length(geography) != 1 ||
       !geography %in% allowed_geographies) {
-    stop("Geography must be State, Division, or Region.")
-  }
+    stop("Geography must be State, Division, or Region.")}
 
   if (is.null(geography_value)) {
     if (geography == "State") geography_value <- "37"
     if (geography == "Division") geography_value <- "5"
-    if (geography == "Region") geography_value <- "3"
-  }
+    if (geography == "Region") geography_value <- "3"}
 
   if (length(geography_value) != 1) {
-    stop("Only one geographic value can be selected.")
-  }
+    stop("Only one geographic value can be selected.")}
 
   geography_code <- find_geography_code(
     year,
     geography,
-    as.character(geography_value)
-  )
+    as.character(geography_value))
 
   requested_variables <- unique(c(numeric_vars, categorical_vars))
 
   base_url <- paste0(
     "https://api.census.gov/data/",
     year,
-    "/acs/acs1/pums"
-  )
+    "/acs/acs1/pums")
 
   response <- GET(
     base_url,
     query = list(
   get = paste(requested_variables, collapse = ","),
   `for` = paste0(tolower(geography), ":", geography_code),
-  key = census_key
-)
-)
+  key = census_key))
 
   census_data <- response_to_tibble(response)
 
@@ -402,30 +348,22 @@ get_census_data <- function(
 
   for (variable in regular_numeric) {
     census_data[[variable]][census_data[[variable]] == "N"] <- NA
-    census_data[[variable]] <- as.numeric(census_data[[variable]])
-  }
+    census_data[[variable]] <- as.numeric(census_data[[variable]])}
 
   time_variables <- intersect(numeric_vars, c("JWAP", "JWDP"))
 
   for (variable in time_variables) {
     census_data[[variable]] <- convert_time_variable(
       census_data[[variable]],
-      year,
-      variable
-    )
-  }
+      year, variable)}
 
   for (variable in categorical_vars) {
     census_data[[variable]] <- convert_to_factor(
       census_data[[variable]],
-      year,
-      variable
-    )
-  }
+      year, variable)}
 
   geography_column <- names(census_data)[
-    tolower(names(census_data)) == tolower(geography)
-  ]
+    tolower(names(census_data)) == tolower(geography)]
 
   if (length(geography_column) == 1) {
     standard_name <- toupper(geography)
@@ -438,19 +376,16 @@ get_census_data <- function(
         geography_variable <- "STATE"
       }
     } else {
-      geography_variable <- standard_name
-    }
+      geography_variable <- standard_name}
 
     census_data[[standard_name]] <- convert_to_factor(
       census_data[[standard_name]],
       year,
       geography_variable
-    )
-  }
+    )}
 
   class(census_data) <- c("census", class(census_data))
-  census_data
-}
+  census_data}
 ```
 
 The default state is North Carolina which has Census code 37.
@@ -481,8 +416,7 @@ get_multiple_years <- function(
     geography_value = NULL
 ) {
   if (length(years) < 1 || !all(years %in% 2021:2024)) {
-    stop("Years must only contain 2021, 2022, 2023, or 2024.")
-  }
+    stop("Years must only contain 2021, 2022, 2023, or 2024.")}
 
   yearly_data <- vector("list", length(years))
 
@@ -496,14 +430,12 @@ get_multiple_years <- function(
       geography = geography,
       geography_value = geography_value
     ) |>
-      mutate(year = factor(current_year))
-  }
+      mutate(year = factor(current_year))}
 
   combined_data <- bind_rows(yearly_data)
-  class(combined_data) <- c("census", class(combined_data))
+  class(combined_data) <- unique(c("census", class(combined_data)))
 
-  combined_data
-}
+  combined_data}
 ```
 
 The example below shows combining of two years of North Carolina data.
@@ -516,7 +448,145 @@ combined_nc_data <- get_multiple_years(
   geography = "State",
   geography_value = "37"
 )
-
 head(combined_nc_data)
 class(combined_nc_data)
+```
+
+## Summary and Plot Functions
+
+Each row in the PUMS data may represent multiple people. The PWGTP column is therefore used as a weight when calculating summaries and creating plots.
+
+### Census Summary Method
+
+The function below calculates weighted means and standard deviations for numeric variables and weighted counts for categorical variables.
+
+```{r}
+summary.census <- function(
+    object,
+    numeric_vars = NULL,
+    categorical_vars = NULL,
+    ...
+) {
+  
+  weights <- object$PWGTP
+  
+  if (is.null(numeric_vars)) {
+    numeric_columns <- vapply(
+      object,
+      is.numeric,
+      logical(1))
+    
+    numeric_vars <- setdiff(
+      names(object)[numeric_columns],
+      c("PWGTP", "JWAP", "JWDP") )}
+  
+  if (is.null(categorical_vars)) {
+    categorical_columns <- vapply(
+      object,
+      is.factor,
+      logical(1))
+    
+    categorical_vars <- names(object)[categorical_columns]}
+  
+  numeric_summary <- list()
+  
+  for (variable in numeric_vars) {
+    values <- object[[variable]]
+    keep <- !is.na(values) & !is.na(weights)
+    
+    values <- values[keep]
+    current_weights <- weights[keep]
+    
+    weighted_mean <- sum(
+      values * current_weights
+    ) / sum(current_weights)
+    
+    weighted_sd <- sqrt(
+      sum(values^2 * current_weights) /
+        sum(current_weights) -
+        weighted_mean^2
+    )
+    
+    numeric_summary[[variable]] <- list(
+      mean = weighted_mean,
+      sd = weighted_sd )}
+  
+  categorical_summary <- list()
+  
+for (variable in categorical_vars) {
+  values <- droplevels(factor(object[[variable]]))
+  keep <- !is.na(values) & !is.na(weights)
+
+  categorical_summary[[variable]] <- tapply(
+    weights[keep],
+    values[keep],
+    sum)}
+  
+  list(
+    numeric = numeric_summary,
+    categorical = categorical_summary)}
+```
+
+The function can summarize all available variables or only variables selected by the user.
+
+```{r}
+summary(north_carolina_data)
+
+summary(
+  north_carolina_data,
+  numeric_vars = "AGEP",
+  categorical_vars = "SEX")
+```
+
+### Census Plot Method
+
+The plot method creates a weighted boxplot using one categorical variable and one numeric variable.
+
+```{r}
+plot.census <- function(
+    x,
+    categorical_var,
+    numeric_var,
+    ...
+) {
+  
+  if (missing(categorical_var) || missing(numeric_var)) {
+    stop("Select one categorical and one numeric variable.")
+  }
+  
+  if (!categorical_var %in% names(x)) {
+    stop("The categorical variable was not found.")}
+  
+  if (!numeric_var %in% names(x)) {
+    stop("The numeric variable was not found.")}
+  
+  ggplot(
+    x,
+    aes(
+      x = .data[[categorical_var]],
+      y = .data[[numeric_var]],
+      weight = PWGTP
+    )
+  ) +
+    geom_boxplot(fill = "lightblue") +
+    labs(
+      title = paste(numeric_var, "by", categorical_var),
+      x = categorical_var,
+      y = numeric_var
+    ) +
+    theme_minimal()}
+```
+
+The first plot compares age by sex. The second compares age across years.
+
+```{r}
+plot(
+  north_carolina_data,
+  categorical_var = "SEX",
+  numeric_var = "AGEP")
+
+plot(
+  combined_nc_data,
+  categorical_var = "year",
+  numeric_var = "AGEP")
 ```
