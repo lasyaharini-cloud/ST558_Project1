@@ -451,7 +451,39 @@ combined_nc_data <- get_multiple_years(
 head(combined_nc_data)
 class(combined_nc_data)
 ```
+### Testing More Function Options
 
+The earlier examples used age and state code. I also checked that the function works with time variable and state name. I requested the usual arrival time at work. The JWAP values should be converted from Census codes into time values as below.
+
+```{r}
+time_test_data <- get_census_data(
+  year = 2024,
+  numeric_vars = c("JWAP", "PWGTP"),
+  categorical_vars = "SEX",
+  geography = "State",
+  geography_value = "37"
+)
+
+time_test_data |>
+  filter(!is.na(JWAP)) |>
+  head()
+
+class(time_test_data$JWAP)
+```
+
+The geography function also allows a geographic label instead of only numericcode. The example below uses the North Carolina label.
+
+```{r}
+state_label_test <- get_census_data(
+  year = 2024,
+  numeric_vars = c("AGEP", "PWGTP"),
+  categorical_vars = "SEX",
+  geography = "State",
+  geography_value = "North Carolina/NC"
+)
+
+head(state_label_test)
+```
 ## Summary and Plot Functions
 
 Each row in the PUMS data may represent multiple people. The PWGTP column is therefore used as a weight when calculating summaries and creating plots.
