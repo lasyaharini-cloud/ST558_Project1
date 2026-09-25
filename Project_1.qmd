@@ -500,6 +500,12 @@ summary.census <- function(
     ...
 ) {
   
+  if (!"PWGTP" %in% names(object)) {
+    stop("The data must contain PWGTP.")}
+  
+  if (!is.numeric(object$PWGTP)) {
+    stop("PWGTP must be numeric.")}
+  
   weights <- object$PWGTP
   
   if (is.null(numeric_vars)) {
@@ -510,7 +516,7 @@ summary.census <- function(
     
     numeric_vars <- setdiff(
       names(object)[numeric_columns],
-      c("PWGTP", "JWAP", "JWDP") )}
+      c("PWGTP", "JWAP", "JWDP"))}
   
   if (is.null(categorical_vars)) {
     categorical_columns <- vapply(
@@ -520,9 +526,22 @@ summary.census <- function(
     
     categorical_vars <- names(object)[categorical_columns]}
   
+  if (!all(numeric_vars %in% names(object))) {
+    stop("One or more numeric variables were not found.")}
+  
+  if (!all(categorical_vars %in% names(object))) {
+    stop("One or more categorical variables were not found.")}
+  
+  if (any(numeric_vars %in% c("PWGTP", "JWAP", "JWDP"))) {
+    stop("PWGTP and time variables cannot be summarized as numeric variables.")}
+  
   numeric_summary <- list()
   
   for (variable in numeric_vars) {
+    
+    if (!is.numeric(object[[variable]])) {
+      stop(variable, " must be numeric.")}
+    
     values <- object[[variable]]
     keep <- !is.na(values) & !is.na(weights)
     
@@ -541,18 +560,23 @@ summary.census <- function(
     
     numeric_summary[[variable]] <- list(
       mean = weighted_mean,
-      sd = weighted_sd )}
+      sd = weighted_sd)}
   
   categorical_summary <- list()
   
-for (variable in categorical_vars) {
-  values <- droplevels(factor(object[[variable]]))
-  keep <- !is.na(values) & !is.na(weights)
-
-  categorical_summary[[variable]] <- tapply(
-    weights[keep],
-    values[keep],
-    sum)}
+  for (variable in categorical_vars) {
+    
+    if (!is.factor(object[[variable]]) &&
+        !is.character(object[[variable]])) {
+      stop(variable, " must be categorical.")}
+    
+    values <- droplevels(factor(object[[variable]]))
+    keep <- !is.na(values) & !is.na(weights)
+    
+    categorical_summary[[variable]] <- tapply(
+      weights[keep],
+      values[keep],
+      sum)}
   
   list(
     numeric = numeric_summary,
@@ -583,14 +607,27 @@ plot.census <- function(
 ) {
   
   if (missing(categorical_var) || missing(numeric_var)) {
-    stop("Select one categorical and one numeric variable.")
-  }
+    stop("Select one categorical and one numeric variable.")}
+  
+  if (length(categorical_var) != 1 ||
+      length(numeric_var) != 1) {
+    stop("Select exactly one categorical and one numeric variable.")}
   
   if (!categorical_var %in% names(x)) {
     stop("The categorical variable was not found.")}
   
   if (!numeric_var %in% names(x)) {
     stop("The numeric variable was not found.")}
+  
+  if (!is.factor(x[[categorical_var]]) &&
+      !is.character(x[[categorical_var]])) {
+    stop("The categorical variable must be a factor or character variable.")}
+  
+  if (!is.numeric(x[[numeric_var]])) {
+    stop("The numeric variable must be numeric.")}
+  
+  if (numeric_var %in% c("PWGTP", "JWAP", "JWDP")) {
+    stop("PWGTP and time variables cannot be used as the numeric variable.")}
   
   ggplot(
     x,
