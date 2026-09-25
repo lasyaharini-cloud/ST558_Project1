@@ -883,6 +883,202 @@ $categorical$SEX
 </div>
 </div>
 </div>
+</section>
+</section>
+<section id="investigation" class="level2">
+<h2 class="anchored" data-anchor-id="investigation">Investigation</h2>
+<p>For this investigation, I looked at age and travel time to work in North Carolina from 2021 through 2024. I used AGEP for age and JWMNP for the number of minutes spent traveling to work. I also included sex and school enrollment as categorical variables.</p>
+<section id="getting-the-investigation-data" class="level3">
+<h3 class="anchored" data-anchor-id="getting-the-investigation-data">Getting the Investigation Data</h3>
+<p>The multiple-year function is used to collect all four years of data.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>investigation_data <span class="ot">&lt;-</span> <span class="fu">get_multiple_years</span>(</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">years =</span> <span class="dv">2021</span><span class="sc">:</span><span class="dv">2024</span>,</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">numeric_vars =</span> <span class="fu">c</span>(<span class="st">"AGEP"</span>, <span class="st">"JWMNP"</span>, <span class="st">"PWGTP"</span>),</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">categorical_vars =</span> <span class="fu">c</span>(<span class="st">"SEX"</span>, <span class="st">"SCH"</span>),</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">geography =</span> <span class="st">"State"</span>,</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">geography_value =</span> <span class="st">"37"</span></span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(investigation_data)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 7
+   AGEP JWMNP PWGTP SEX    SCH                                       STATE year 
+  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;fct&gt;  &lt;fct&gt;                                     &lt;fct&gt; &lt;fct&gt;
+1    21     5    78 Male   No, has not attended in the last 3 months Nort… 2021 
+2    58     0     9 Female No, has not attended in the last 3 months Nort… 2021 
+3    20     0    32 Female Yes, private school or college or home s… Nort… 2021 
+4    40     0     6 Female No, has not attended in the last 3 months Nort… 2021 
+5    21     5   119 Male   Yes, private school or college or home s… Nort… 2021 
+6    20     0    65 Male   Yes, public school or public college      Nort… 2021 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(investigation_data)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 439757      7</code></pre>
+</div>
+</div>
+<p>Some people in the data did not travel to work. Their travel time is recorded as zero. I removed these observations before analyzing travel time.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>commute_data <span class="ot">&lt;-</span> investigation_data <span class="sc">|&gt;</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(JWMNP), JWMNP <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(commute_data) <span class="ot">&lt;-</span> <span class="fu">unique</span>(</span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="st">"census"</span>, <span class="fu">class</span>(commute_data))</span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(commute_data)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 7
+   AGEP JWMNP PWGTP SEX    SCH                                       STATE year 
+  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;fct&gt;  &lt;fct&gt;                                     &lt;fct&gt; &lt;fct&gt;
+1    21     5    78 Male   No, has not attended in the last 3 months Nort… 2021 
+2    21     5   119 Male   Yes, private school or college or home s… Nort… 2021 
+3    25    10    82 Male   No, has not attended in the last 3 months Nort… 2021 
+4    21     5    95 Female Yes, private school or college or home s… Nort… 2021 
+5    19    10    23 Male   Yes, public school or public college      Nort… 2021 
+6    57    15    45 Male   No, has not attended in the last 3 months Nort… 2021 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(commute_data)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 163937      7</code></pre>
+</div>
+</div>
+</section>
+<section id="comparing-the-summaries" class="level3">
+<h3 class="anchored" data-anchor-id="comparing-the-summaries">Comparing the Summaries</h3>
+<p>I separated the first and last year to compare the weighted summaries for commuters in 2021 and 2024.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>investigation_2021 <span class="ot">&lt;-</span> commute_data <span class="sc">|&gt;</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(year <span class="sc">==</span> <span class="st">"2021"</span>)</span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(investigation_2021) <span class="ot">&lt;-</span> <span class="fu">unique</span>(</span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="st">"census"</span>, <span class="fu">class</span>(investigation_2021))</span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a>investigation_2024 <span class="ot">&lt;-</span> commute_data <span class="sc">|&gt;</span></span>
+<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(year <span class="sc">==</span> <span class="st">"2024"</span>)</span>
+<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-11"><a href="#cb48-11" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(investigation_2024) <span class="ot">&lt;-</span> <span class="fu">unique</span>(</span>
+<span id="cb48-12"><a href="#cb48-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="st">"census"</span>, <span class="fu">class</span>(investigation_2024))</span>
+<span id="cb48-13"><a href="#cb48-13" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The first summary uses both numeric variables and two categorical variables for 2021.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>summary_2021 <span class="ot">&lt;-</span> <span class="fu">summary</span>(</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>  investigation_2021,</span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">numeric_vars =</span> <span class="fu">c</span>(<span class="st">"AGEP"</span>, <span class="st">"JWMNP"</span>),</span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">categorical_vars =</span> <span class="fu">c</span>(<span class="st">"SEX"</span>, <span class="st">"SCH"</span>)</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>summary_2021</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$numeric
+$numeric$AGEP
+$numeric$AGEP$mean
+[1] 41.58549
+
+$numeric$AGEP$sd
+[1] 14.76988
+
+
+$numeric$JWMNP
+$numeric$JWMNP$mean
+[1] 24.57827
+
+$numeric$JWMNP$sd
+[1] 21.03442
+
+
+
+$categorical
+$categorical$SEX
+   Male  Female 
+2125458 1837846 
+
+$categorical$SCH
+Yes, private school or college or home school 
+                                        73244 
+    No, has not attended in the last 3 months 
+                                      3526231 
+         Yes, public school or public college 
+                                       363829 </code></pre>
+</div>
+</div>
+<p>The same variables are summarized for 2024.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>summary_2024 <span class="ot">&lt;-</span> <span class="fu">summary</span>(</span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>  investigation_2024,</span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">numeric_vars =</span> <span class="fu">c</span>(<span class="st">"AGEP"</span>, <span class="st">"JWMNP"</span>),</span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">categorical_vars =</span> <span class="fu">c</span>(<span class="st">"SEX"</span>, <span class="st">"SCH"</span>)</span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>summary_2024</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$numeric
+$numeric$AGEP
+$numeric$AGEP$mean
+[1] 41.68293
+
+$numeric$AGEP$sd
+[1] 14.87446
+
+
+$numeric$JWMNP
+$numeric$JWMNP$mean
+[1] 25.76062
+
+$numeric$JWMNP$sd
+[1] 21.32595
+
+
+
+$categorical
+$categorical$SEX
+   Male  Female 
+2413491 2138016 
+
+$categorical$SCH
+Yes, private school or college or home school 
+                                        84384 
+    No, has not attended in the last 3 months 
+                                      4064810 
+         Yes, public school or public college 
+                                       402313 </code></pre>
+</div>
+</div>
+</section>
+<section id="investigation-plots" class="level3">
+<h3 class="anchored" data-anchor-id="investigation-plots">Investigation Plots</h3>
+<p>The first plot compares the age distribution across all four survey years.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(</span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>  investigation_data,</span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">categorical_var =</span> <span class="st">"year"</span>,</span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">numeric_var =</span> <span class="st">"AGEP"</span></span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Project_1_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The second plot compares travel time to work for male and female commuters. Only positive travel times are used in this plot.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(</span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>  commute_data,</span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">categorical_var =</span> <span class="st">"SEX"</span>,</span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">numeric_var =</span> <span class="st">"JWMNP"</span></span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Project_1_files/figure-html/unnamed-chunk-28-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
 
 
 </section>

@@ -659,3 +659,104 @@ plot(
   categorical_var = "year",
   numeric_var = "AGEP")
 ```
+
+## Investigation
+
+For this investigation, I looked at age and travel time to work in North Carolina from 2021 through 2024. I used AGEP for age and JWMNP for the number of minutes spent traveling to work. I also included sex and school enrollment as categorical variables.
+
+### Getting the Investigation Data
+
+The multiple-year function is used to collect all four years of data.
+
+```{r}
+investigation_data <- get_multiple_years(
+  years = 2021:2024,
+  numeric_vars = c("AGEP", "JWMNP", "PWGTP"),
+  categorical_vars = c("SEX", "SCH"),
+  geography = "State",
+  geography_value = "37"
+)
+
+head(investigation_data)
+dim(investigation_data)
+```
+
+Some people in the data did not travel to work. Their travel time is recorded as zero. I removed these observations before analyzing travel time.
+
+```{r}
+commute_data <- investigation_data |>
+  filter(!is.na(JWMNP), JWMNP > 0)
+
+class(commute_data) <- unique(
+  c("census", class(commute_data))
+)
+
+head(commute_data)
+dim(commute_data)
+```
+
+### Comparing the Summaries
+
+I separated the first and last year to compare the weighted summaries for commuters in 2021 and 2024.
+
+```{r}
+investigation_2021 <- commute_data |>
+  filter(year == "2021")
+
+class(investigation_2021) <- unique(
+  c("census", class(investigation_2021))
+)
+
+investigation_2024 <- commute_data |>
+  filter(year == "2024")
+
+class(investigation_2024) <- unique(
+  c("census", class(investigation_2024))
+)
+```
+
+The first summary uses both numeric variables and two categorical variables for 2021.
+
+```{r}
+summary_2021 <- summary(
+  investigation_2021,
+  numeric_vars = c("AGEP", "JWMNP"),
+  categorical_vars = c("SEX", "SCH")
+)
+
+summary_2021
+```
+
+The same variables are summarized for 2024.
+
+```{r}
+summary_2024 <- summary(
+  investigation_2024,
+  numeric_vars = c("AGEP", "JWMNP"),
+  categorical_vars = c("SEX", "SCH")
+)
+
+summary_2024
+```
+
+### Investigation Plots
+
+The first plot compares the age distribution across all four survey years.
+
+```{r}
+plot(
+  investigation_data,
+  categorical_var = "year",
+  numeric_var = "AGEP"
+)
+```
+
+The second plot compares travel time to work for male and female commuters. Only positive travel times are used in this plot.
+
+```{r}
+plot(
+  commute_data,
+  categorical_var = "SEX",
+  numeric_var = "JWMNP"
+)
+```
