@@ -760,3 +760,12 @@ plot(
   numeric_var = "JWMNP"
 )
 ```
+### Investigation Findings
+
+The weighted average age of commuters was about 41.59 years in 2021 and 41.68 years in 2024. This shows that the average age changed very less between the two years. The weighted average travel time increased from about 24.5 minutes in 2021 to 25.7 minutes in 2024. This is an increase of about 1.18 minutes.
+The age boxplots are similar across all four years. The medians and overall spread do not appear to change very much. The travel-time plot also shows similar distributions for male and female commuters, although both groups have several people with much longer travel times.
+
+## Conclusion
+
+In this project, I created functions to download and clean Census PUMS data from multiple years. I created a census class with summary and plot methods that use PWGTP as a weight.
+The investigation compared age and travel time for North Carolina commuters. The average commuter age remained almost the same, while the average travel time was slightly higher in 2024 than in 2021. In conclusion we noted that the functions made it possible to request, combine summarize and visualize the Census data.
