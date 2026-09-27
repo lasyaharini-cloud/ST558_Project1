@@ -89,7 +89,6 @@ The information is downloaded for all four years and saved in an RDS file.
 
 ```{r}
 # Saving the variable information so it can be reused
-#| label: save-variable-metadata
 
 if (!file.exists("data/census_variable_values.rds")) {
   years <- 2021:2024
