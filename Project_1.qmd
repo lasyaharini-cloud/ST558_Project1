@@ -36,6 +36,7 @@ if (census_key == "") {
 The Census API uses codes for many variables. I first created a function that downloads the variable information for one year and keeps only the variables needed for this project.
 
 ```{r}
+# Listing the variables and downloading information
 pums_variables <- c(
   "AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP",
   "PWGTP", "FER", "HHL", "SCH", "SCHL", "SEX")
@@ -87,6 +88,7 @@ get_variable_metadata <- function(year) {
 The information is downloaded for all four years and saved in an RDS file.
 
 ```{r}
+# Saving the variable information so it can be reused
 #| label: save-variable-metadata
 
 if (!file.exists("data/census_variable_values.rds")) {
@@ -116,6 +118,7 @@ names(census_variable_values)
 This helper extracts the codes and labels for one variable. These labels will be used when converting categorical, time and geographic variables.
 
 ```{r}
+# Obtaining codes and labels for one variable
 get_value_labels <- function(year, variable) {
   year_information <- census_variable_values[[as.character(year)]]
   variable_information <- year_information[[variable]]
@@ -136,6 +139,7 @@ get_value_labels <- function(year, variable) {
 Check using the SEX variable.
 
 ```{r}
+# Checking if labels were downloaded correctly
 get_value_labels(2024, "SEX")
 ```
 
@@ -144,6 +148,7 @@ get_value_labels(2024, "SEX")
 The next helper turns the result from GET() into a tibble. The first row of the response contains the column names.
 
 ```{r}
+# Turning the Census API response into a tibble
 response_to_tibble <- function(response) {
   stop_for_status(response)
 
@@ -165,6 +170,7 @@ response_to_tibble <- function(response) {
 This request is used to check the helper.
 
 ```{r}
+#Testing the api helper with smal request
 test_url <- paste0(
   "https://api.census.gov/data/2024/acs/acs1/pums",
   "?get=AGEP,PWGTP,SEX",
@@ -183,6 +189,7 @@ head(test_data)
 JWAP and JWDP are stored as coded time ranges. This helper finds the midpoint of one time range.
 
 ```{r}
+# Finding the midpoint of one census time range
 time_midpoint <- function(time_label) {
   if (is.na(time_label) || grepl("N/A", time_label, ignore.case = TRUE)) {
     return(NA_real_)}
@@ -217,6 +224,7 @@ time_midpoint <- function(time_label) {
 This function applies the midpoint calculation to a full column.
 
 ```{r}
+# Converting full column of time codes
 convert_time_variable <- function(values, year, variable) {
   labels <- get_value_labels(year, variable)
   time_labels <- unname(labels[match(values, names(labels))])
@@ -234,6 +242,7 @@ convert_time_variable <- function(values, year, variable) {
 Categorical variables are changed from codes into factors with readable labels.
 
 ```{r}
+# Changing census code to readable factor label
 convert_to_factor <- function(values, year, variable) {
   labels <- get_value_labels(year, variable)
 
@@ -248,6 +257,7 @@ convert_to_factor <- function(values, year, variable) {
 The user can enter a geographic code, label or the word all.
 
 ```{r}
+# Matching geography code or name with the census value
 find_geography_code <- function(year, geography, geography_value) {
   if (tolower(geography_value) == "all") {
     return("*")}
@@ -280,6 +290,7 @@ find_geography_code <- function(year, geography, geography_value) {
 The main function checks the inputs, creates the API request and cleens the returned columns.
 
 ```{r}
+# Cleaning the one year census data
 get_census_data <- function(
     year = 2024,
     numeric_vars = c("AGEP", "PWGTP"),
@@ -391,6 +402,7 @@ get_census_data <- function(
 The default state is North Carolina which has Census code 37.
 
 ```{r}
+# Testing function using North Carolina data
 north_carolina_data <- get_census_data(
   year = 2024,
   numeric_vars = c("AGEP", "PWGTP"),
@@ -408,6 +420,7 @@ class(north_carolina_data)
 The final function calls the single-year function for each requested year, it adds a year column and combines the results.
 
 ```{r}
+# Requesting several years and combining them together
 get_multiple_years <- function(
     years,
     numeric_vars = c("AGEP", "PWGTP"),
@@ -441,6 +454,7 @@ get_multiple_years <- function(
 The example below shows combining of two years of North Carolina data.
 
 ```{r}
+# Testing the function using two survey years
 combined_nc_data <- get_multiple_years(
   years = c(2023, 2024),
   numeric_vars = c("AGEP", "PWGTP"),
@@ -456,6 +470,7 @@ class(combined_nc_data)
 The earlier examples used age and state code. I also checked that the function works with time variable and state name. I requested the usual arrival time at work. The JWAP values should be converted from Census codes into time values as below.
 
 ```{r}
+# Time variable is converted correctly
 time_test_data <- get_census_data(
   year = 2024,
   numeric_vars = c("JWAP", "PWGTP"),
@@ -474,6 +489,7 @@ class(time_test_data$JWAP)
 The geography function also allows a geographic label instead of only numericcode. The example below uses the North Carolina label.
 
 ```{r}
+#State name can be used instead of a code
 state_label_test <- get_census_data(
   year = 2024,
   numeric_vars = c("AGEP", "PWGTP"),
@@ -586,6 +602,7 @@ summary.census <- function(
 The function can summarize all available variables or only variables selected by the user.
 
 ```{r}
+# Testing the summary method with default and selected variables
 summary(north_carolina_data)
 
 summary(
@@ -599,6 +616,7 @@ summary(
 The plot method creates a weighted boxplot using one categorical variable and one numeric variable.
 
 ```{r}
+# Creating weighted boxplot for the census data
 plot.census <- function(
     x,
     categorical_var,
@@ -630,13 +648,13 @@ plot.census <- function(
     stop("PWGTP and time variables cannot be used as the numeric variable.")}
   
   ggplot(
-    x,
-    aes(
-      x = .data[[categorical_var]],
-      y = .data[[numeric_var]],
-      weight = PWGTP
-    )
-  ) +
+  x,
+  aes(
+    x = get(categorical_var),
+    y = get(numeric_var),
+    weight = PWGTP
+  )
+) +
     geom_boxplot(fill = "lightblue") +
     labs(
       title = paste(numeric_var, "by", categorical_var),
@@ -649,6 +667,7 @@ plot.census <- function(
 The first plot compares age by sex. The second compares age across years.
 
 ```{r}
+# Testing the plot method with two different categorical variables
 plot(
   north_carolina_data,
   categorical_var = "SEX",
@@ -669,6 +688,7 @@ For this investigation, I looked at age and travel time to work in North Carolin
 The multiple-year function is used to collect all four years of data.
 
 ```{r}
+# The four years used in the investigation
 investigation_data <- get_multiple_years(
   years = 2021:2024,
   numeric_vars = c("AGEP", "JWMNP", "PWGTP"),
@@ -684,6 +704,7 @@ dim(investigation_data)
 Some people in the data did not travel to work. Their travel time is recorded as zero. I removed these observations before analyzing travel time.
 
 ```{r}
+# Keeping only people with a positive travel time
 commute_data <- investigation_data |>
   filter(!is.na(JWMNP), JWMNP > 0)
 
@@ -700,6 +721,7 @@ dim(commute_data)
 I separated the first and last year to compare the weighted summaries for commuters in 2021 and 2024.
 
 ```{r}
+# Separating the first and last years for comparison
 investigation_2021 <- commute_data |>
   filter(year == "2021")
 
@@ -718,6 +740,7 @@ class(investigation_2024) <- unique(
 The first summary uses both numeric variables and two categorical variables for 2021.
 
 ```{r}
+# The weighted summary for year 2021
 summary_2021 <- summary(
   investigation_2021,
   numeric_vars = c("AGEP", "JWMNP"),
@@ -730,6 +753,7 @@ summary_2021
 The same variables are summarized for 2024.
 
 ```{r}
+# The weighted summary for year 2024
 summary_2024 <- summary(
   investigation_2024,
   numeric_vars = c("AGEP", "JWMNP"),
@@ -744,6 +768,7 @@ summary_2024
 The first plot compares the age distribution across all four survey years.
 
 ```{r}
+# Study the age distributions across the four years (2021-2024)
 plot(
   investigation_data,
   categorical_var = "year",
@@ -754,6 +779,7 @@ plot(
 The second plot compares travel time to work for male and female commuters. Only positive travel times are used in this plot.
 
 ```{r}
+# Compare travel time between male and female commuters
 plot(
   commute_data,
   categorical_var = "SEX",
